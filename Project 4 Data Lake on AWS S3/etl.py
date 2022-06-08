@@ -24,12 +24,9 @@ def create_spark_session():
     :return spark: Spark session
     """
     
-    spark = SparkSession \
-            .builder \
-            .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0") \
-            .getOrCreate()
-    
-    return spark
+    return SparkSession.builder.config(
+        "spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0"
+    ).getOrCreate()
 
 
 def process_song_data(spark, input_data, output_data):
@@ -43,8 +40,8 @@ def process_song_data(spark, input_data, output_data):
     """
     
     # Get filepath to song data file
-    song_data = input_data + "song_data/*/*/*/*.json"
-            
+    song_data = f"{input_data}song_data/*/*/*/*.json"
+
     songSchema = R([
         Fld("artist_id", Str()),
         Fld("artist_latitude", Dbl()),
@@ -56,29 +53,34 @@ def process_song_data(spark, input_data, output_data):
         Fld("title", Str()),
         Fld("year", Int()),
     ])
-    
+
     # Read song data file
     print("Reading song_data JSON files from S3")
     df = spark.read.json(song_data, mode='PERMISSIVE', schema=songSchema, \
                          columnNameOfCorruptRecord='corrupt_record').dropDuplicates()
     print("Read completed")
-    
+
     # Extract columns to create songs table
     songs_table = df.select("title", "artist_id", "year", "duration").dropDuplicates() \
                     .withColumn("song_id", monotonically_increasing_id())
 
     print("Writing Songs table to S3 after processing")
     # Write songs table to parquet files partitioned by year and artist
-    songs_table.write.parquet(output_data + "songs/", mode="overwrite", partitionBy=["year","artist_id"])
+    songs_table.write.parquet(
+        f"{output_data}songs/",
+        mode="overwrite",
+        partitionBy=["year", "artist_id"],
+    )
+
     print("Completed")
-    
+
     # Extract columns to create artists table
     artists_table = df.select("artist_id", "artist_name", "artist_location", "artist_latitude", "artist_longitude") \
                         .dropDuplicates()
 
     print("Writing Artists table to S3 after processing")
     # Write artists table to parquet files
-    artists_table.write.parquet(output_data + "artists/", mode="overwrite")
+    artists_table.write.parquet(f"{output_data}artists/", mode="overwrite")
     print("Completed")
     
 
@@ -93,13 +95,13 @@ def process_log_data(spark, input_data, output_data):
     """
     
     # Ret filepath to log data file
-    log_data = input_data + 'log_data/*/*/*.json'
+    log_data = f'{input_data}log_data/*/*/*.json'
 
     # Read log data file
     print("Reading log_data JSON files from S3")
     df = spark.read.json(log_data)
     print("Read completed")
-    
+
     # Filter by actions for song plays
     df = df.filter(df.page == 'NextSong')
 
@@ -107,14 +109,14 @@ def process_log_data(spark, input_data, output_data):
     users_table = df.select("userId", "firstName", "lastName", "gender", "level").dropDuplicates()
 
     # Write users table to parquet files
-    print("Writing Users table to S3 after processing")  
+    print("Writing Users table to S3 after processing")
     users_table.write.parquet(os.path.join(output_data, "users/") , mode="overwrite")
     print("Completed")
-    
+
     # Create timestamp column from original timestamp column
     get_timestamp = udf(lambda x : datetime.utcfromtimestamp(int(x) / 1000), TimestampType())
     df = df.withColumn("start_time", get_timestamp("ts"))
-    
+
     # Extract columns to create time table
     time_table = df.withColumn("hour", hour("start_time")) \
                    .withColumn("day", dayofmonth("start_time")) \
@@ -126,11 +128,11 @@ def process_log_data(spark, input_data, output_data):
                    .drop_duplicates()
 
     # Write time table to parquet files partitioned by year and month
-    print("Writing Time table to S3 after processing")  
+    print("Writing Time table to S3 after processing")
     time_table.write.parquet(os.path.join(output_data, "time_table/"), mode='overwrite', \
                              partitionBy=["year","month"])
     print("Completed")
-    
+
     # Read in song data to use for songplays table
     song_df = spark.read \
                 .format("parquet") \
@@ -152,7 +154,7 @@ def process_log_data(spark, input_data, output_data):
                                 "artist_id", "session_id", "location", "user_agent", "year", "month").drop_duplicates()
 
     # Write songplays table to parquet files partitioned by year and month
-    print("Writing Songplays table to S3 after processing")  
+    print("Writing Songplays table to S3 after processing")
     songplays_table.write.parquet(os.path.join(output_data, "songplays/"), \
                                   mode="overwrite", partitionBy=["year","month"])
     print("Completed")
@@ -162,13 +164,13 @@ def main():
     spark = create_spark_session()
     input_data = "s3a://udacity-dend/"
     output_data = "s3a://sparkify-udacity/"
-    
+
     print("\n")
-    
+
     print("Processing song_data files")
     process_song_data(spark, input_data, output_data)
     print("Processing completed\n")
-    
+
     print("Processing log_data files")
     process_log_data(spark, input_data, output_data)
     print("Processing completed\n")

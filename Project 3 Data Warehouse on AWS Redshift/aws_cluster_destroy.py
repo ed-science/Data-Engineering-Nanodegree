@@ -42,9 +42,12 @@ def aws_client(service, region):
     """
 
     global KEY, SECRET
-    client = boto3.client(service, aws_access_key_id=KEY, aws_secret_access_key=SECRET, region_name=region)
-
-    return client
+    return boto3.client(
+        service,
+        aws_access_key_id=KEY,
+        aws_secret_access_key=SECRET,
+        region_name=region,
+    )
 
 
 def redshift_cluster_status(redshift):
@@ -57,9 +60,7 @@ def redshift_cluster_status(redshift):
     global DWH_CLUSTER_IDENTIFIER
 
     cluster_props = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
-    cluster_status = cluster_props['ClusterStatus'].lower()
-
-    return cluster_status        
+    return cluster_props['ClusterStatus'].lower()        
         
 
 def destroy_redshift_cluster(redshift):

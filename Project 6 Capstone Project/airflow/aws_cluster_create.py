@@ -64,9 +64,12 @@ def aws_client(service, region):
     """
 
     global KEY, SECRET
-    client = boto3.client(service, aws_access_key_id=KEY, aws_secret_access_key=SECRET, region_name=region)
-
-    return client
+    return boto3.client(
+        service,
+        aws_access_key_id=KEY,
+        aws_secret_access_key=SECRET,
+        region_name=region,
+    )
 
 
 def aws_resource(name, region):
@@ -78,9 +81,12 @@ def aws_resource(name, region):
     """
 
     global KEY, SECRET
-    resource = boto3.resource(name, region_name=region, aws_access_key_id=KEY, aws_secret_access_key=SECRET)
-
-    return resource
+    return boto3.resource(
+        name,
+        region_name=region,
+        aws_access_key_id=KEY,
+        aws_secret_access_key=SECRET,
+    )
 
 
 def iam_create_role(iam):
@@ -115,9 +121,7 @@ def iam_create_role(iam):
                                                                                   "/AmazonS3ReadOnlyAccess")[
                                             'ResponseMetadata']['HTTPStatusCode']
 
-    roleArn = iam.get_role(RoleName=DWH_IAM_ROLE_NAME)['Role']['Arn']
-
-    return roleArn
+    return iam.get_role(RoleName=DWH_IAM_ROLE_NAME)['Role']['Arn']
 
 
 def init_cluster_creation(redshift, roleArn):
@@ -189,9 +193,7 @@ def redshift_cluster_status(redshift):
     global DWH_CLUSTER_IDENTIFIER
 
     cluster_props = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
-    cluster_status = cluster_props['ClusterStatus'].lower()
-
-    return cluster_status
+    return cluster_props['ClusterStatus'].lower()
 
 
 def aws_open_redshift_port(ec2, redshift):
@@ -234,9 +236,7 @@ def main():
 
     roleArn = iam_create_role(iam)
 
-    clusterCreationStarted = init_cluster_creation(redshift, roleArn)
-
-    if clusterCreationStarted:
+    if clusterCreationStarted := init_cluster_creation(redshift, roleArn):
         print("The cluster is being created.")
 
         while True:

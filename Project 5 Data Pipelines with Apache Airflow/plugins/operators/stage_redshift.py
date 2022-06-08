@@ -49,17 +49,17 @@ class StageToRedshiftOperator(BaseOperator):
         redshift = PostgresHook(self.redshift_conn_id)
 
         self.log.info("Deleting data from destination Redshift table.")
-        redshift.run("DELETE FROM {}".format(self.table))
+        redshift.run(f"DELETE FROM {self.table}")
 
         self.log.info("Copying data from S3 to Redshift.")
-        s3_path = "s3://{}/{}".format(self.s3_bucket, self.s3_key)
- 
+        s3_path = f"s3://{self.s3_bucket}/{self.s3_key}"
+
         if self.execution_date:
             year = self.execution_date.strftime("%Y")
             month = self.execution_date.strftime("%m")
-     
+
             s3_path = '/'.join([s3_path, str(year), str(month)])
-        
+
         formatted_sql = StageToRedshiftOperator.copy_sql.format(
             self.table,
             s3_path,
@@ -68,7 +68,7 @@ class StageToRedshiftOperator(BaseOperator):
             self.region,
             self.file_format
         )
-        
+
         redshift.run(formatted_sql)
 
         self.log.info(f"Successfully copied {self.table} from S3 to Redshift staging table.")
