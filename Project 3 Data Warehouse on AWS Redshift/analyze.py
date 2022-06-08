@@ -11,7 +11,7 @@ def analyze_query(cur, conn):
     """
     
     for query in analyze_queries:
-        print('Running ' + query)         
+        print(f'Running {query}')
         try:
             cur.execute(query)
             results = cur.fetchone()
@@ -19,7 +19,7 @@ def analyze_query(cur, conn):
             for row in results:
                 print("   ", row)
                 conn.commit()
-                
+
         except psycopg2.Error as e:
             print(e)
             conn.close()
